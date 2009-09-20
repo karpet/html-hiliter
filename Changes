@@ -81,3 +81,10 @@ Revision history for Perl extension HiLiter.
     bug fix: plaintext() not called if text contains entities
     mpeters@plusthree.com contributed the HiClass feature.
     added filter example to lightfile.cgi
+
+* 0.13  xxx
+    * rewrite to use Search::Tools. At the same time considered replacing HTML::Parser with XML::LibXML for
+      speed reasons, but when comparing the RT queues for both, it became obvious that HTML::Parser was a much
+      safer route. That, and I couldn't get tests in XML::LibXML to pass against libxml2 2.7.
+
+
