@@ -3,10 +3,9 @@ HiLiter.pm
 Makefile.PL
 MANIFEST
 README
-t/1.t
-t/test.html
-t/test.t
-t/test2.t
-META.yml                                Module meta-data (added by MakeMaker)
+t/001.t
+t/docs/test.html
+t/002.t
+t/003.t
 examples/lightfile.pl
 examples/lightfile.cgi
