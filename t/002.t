@@ -1,19 +1,31 @@
 use strict;
-use Test::More tests => 1;
+use Test::More tests => 3;
 use HTML::HiLiter;
+use File::Slurp;
 
 my $file = 't/docs/test.html';
 
 my @q = (
     'foo = "quick brown" and bar=(fox* or run)',
-    'runner', '"over the too lazy dog"',
-    '"c++ filter"', '"-h option"', 'laz', 'fakefox'
+    'runner',
+    '"over the too lazy dog"',
+    '"c++ filter"',
+    '"-h option"',
+    'laz',
+    'fakefox',
+    '"jumped over"',
 );
 
-#select(STDERR);
-my $hiliter = HTML::HiLiter->new( Links => 1 );
+ok( my $hiliter = HTML::HiLiter->new(
+        Links => 1,
+        query => join( ' ', @q ),
 
-$hiliter->Queries( \@q, [qw(foo bar)] );
-$hiliter->CSS;
+        #debug => 1,
+        #tty   => 1,
+    ),
+    "new HiLiter"
+);
 
-ok( $hiliter->Run($file) );
+ok( my $hilited = $hiliter->run( scalar \read_file($file) ) );
+
+ok( $hilited->isa("HTML::Parser"), "hiliter matches" );

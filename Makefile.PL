@@ -24,6 +24,7 @@ WriteMakefile(
         'Test::More'    => 0,        # Search::Tools req too
         'File::Slurp'   => 0,        # Search::Tools req too
         'Data::Dump'    => 0,        # Search::Tools req too
+        'Rose::Object'  => 0,        # Search::Tools req too
 
     },
     dist  => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
