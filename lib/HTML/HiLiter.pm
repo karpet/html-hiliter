@@ -612,7 +612,7 @@ HTML::HiLiter - highlight words in an HTML document just like a felt-tip HiLiter
  use HTML::HiLiter;
  
  my $hiliter = new HTML::HiLiter(
-  word_characters 	=>	'\w\-\.',
+  word_characters   =>  '\w\-\.',
   ignore_first_char =>  '\-\.',
   ignore_last_char  =>  '\-\.',
   tag               =>	'span',
@@ -930,8 +930,6 @@ Send email to swpubs@cray.com.
 
 =head1 SEE ALSO
 
-L<SWISH::HiLiter>, L<SWISH::API>, L<HTML::Parser>, L<HTML::Tagset>, L<HTML::Entities>,
-L<Text::ParseWords>, L<LWP::UserAgent>, L<HTTP::Request>, L<Data::Dumper>
-
+L<Search::Tools>, L<HTML::Parser>
 
 =cut
