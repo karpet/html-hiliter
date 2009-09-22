@@ -496,6 +496,8 @@ sub _handle_default {
     }
 }
 
+*Run = \&run;
+
 sub run {
     my $self   = shift;
     my $string = shift;
@@ -786,6 +788,10 @@ This method is deprecated. See the B<query> param to new() instead.
 
 run() takes either a file name, a URL (indicated by a leading 'http://'),
 or a scalar reference to a string of HTML text.
+
+=head2 Run
+
+For backwards compatability, Run() is an alias for run().
 
 =head1 FILTERS
 
