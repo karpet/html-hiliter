@@ -19,7 +19,7 @@ WriteMakefile(
     ABSTRACT_FROM => 'lib/HTML/HiLiter.pm',
     PL_FILES      => {},
     PREREQ_PM     => {
-        'Search::Tools' => '0.25',
+        'Search::Tools' => '0.26',
         'HTML::Parser'  => 0,
         'Test::More'    => 0,        # Search::Tools req too
         'File::Slurp'   => 0,        # Search::Tools req too
@@ -31,11 +31,9 @@ WriteMakefile(
     clean => { FILES    => 'HTML-HiLiter-*' },
     ( $MM_Version >= 6.48 ? ( MIN_PERL_VERSION => '5.8.3' ) : () ),
     ( $MM_Version >= 6.31 ? ( LICENSE          => 'perl' )  : () ),
-    (   $MM_Version <= 6.44 ? ()
-        :
-
-            (
-            META_MERGE => {
+    (   $MM_Version <= 6.44
+        ? ()
+        : ( META_MERGE => {
                 resources => {
                     license  => 'http://dev.perl.org/licenses/',
                     homepage => 'http://perl.peknet.com/wiki/HTMLHiLiter',
@@ -44,7 +42,7 @@ WriteMakefile(
                     repository => 'http://svn.peknet.com/perl/HTML-HiLiter',
                 },
             }
-            )
+        )
     ),
 
 );
