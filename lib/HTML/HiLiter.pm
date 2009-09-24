@@ -9,6 +9,7 @@ use base qw( Search::Tools::Object );
 use Carp;
 use Search::Tools::QueryParser;
 use Search::Tools::HiLiter;
+use Search::Tools::UTF8;
 use Data::Dump qw( dump );
 use HTML::Parser;
 use HTML::Tagset;
@@ -229,6 +230,8 @@ sub _handle_tag {
         }
         else {
 
+            $self->_meta_charset_check( $tag, $attr, \$text );
+
             # still in <head> section. handle and continue.
             if ( $self->{print_stream} ) {
                 print $text;
@@ -247,6 +250,28 @@ sub _handle_tag {
     else {
         $self->_handle_start_tag( $parser, $tag, $tagname, $offset, $length,
             $offset_end, $attr, $text );
+    }
+}
+
+sub _meta_charset_check {
+    my ( $self, $tag, $attr, $text ) = @_;
+
+    # if this is a meta tag, check for encoding. we want to make sure
+    # we do not declare anything other than utf-8 or ascii in the output,
+    # since Search::Tools::HiLiter always returns utf-8.
+    if ( lc($tag) eq 'meta' ) {
+        if ( exists $attr->{'http-equiv'} or exists $attr->{'HTTP-EQUIV'} ) {
+            if ( exists $attr->{content} or exists $attr->{CONTENT} ) {
+                my $name    = $attr->{'http-equiv'} || $attr->{'HTTP-EQUIV'};
+                my $content = $attr->{content}      || $attr->{CONTENT};
+                if (   lc($name) eq 'content-type'
+                    && lc($content) !~ m/ascii|utf-8/i )
+                {
+                    $$text
+                        = qq(<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>);
+                }
+            }
+        }
     }
 }
 
@@ -404,6 +429,7 @@ sub _handle_start_tag {
 
 sub _handle_text {
     my ( $self, $parser, $decoded_text, $text, $offset, $length ) = @_;
+    $text = to_utf8($text);
     my $text_filter = $self->{text_filter};
     my $filtered
         = defined $text_filter
