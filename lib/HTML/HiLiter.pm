@@ -341,9 +341,12 @@ sub _flush_buffer {
             $hilited = $self->{_buffer};
         }
 
-        # remove any NULL markers we inserted to skip hiliting
-        $hilited =~ s/\002|\003//g;
-
+        # remove any markers we inserted to skip hiliting.
+        # doing it in 2 expressions instead of |'d together single expre
+        # is much faster, nytprof tells me.
+        $hilited =~ s/\002//g;
+        $hilited =~ s/\003//g;
+        
         if ( $self->{print_stream} ) {
             print { $self->{fh} } $hilited;
         }
