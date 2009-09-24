@@ -67,4 +67,4 @@ or the &#8212; long-dash option
 </html>
 EOF
 
-is( $expected_hilited, $hilited, "hiliter matches" );
+is( $hilited, $expected_hilited, "hiliter matches" );

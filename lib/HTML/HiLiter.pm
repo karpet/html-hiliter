@@ -3,14 +3,12 @@ use strict;
 use warnings;
 use 5.008003;    # Search::Tools requires this
 use base qw( Search::Tools::Object );
-
-#use sigtrap qw(die normal-signals error-signals);
-
 use Carp;
 use Search::Tools::QueryParser;
 use Search::Tools::HiLiter;
 use Search::Tools::UTF8;
 use Data::Dump qw( dump );
+use File::Slurp;
 use HTML::Parser;
 use HTML::Tagset;
 
@@ -20,7 +18,7 @@ $HTML::Tagset::isHeadElement{'head'}++;
 $HTML::Tagset::isHeadElement{'html'}++;
 
 __PACKAGE__->mk_accessors(
-    qw( hiliter query buffer_limit print_stream style_header ));
+    qw( hiliter query buffer_limit print_stream fh style_header ));
 
 our $VERSION = '0.14';
 
@@ -28,8 +26,10 @@ our $VERSION = '0.14';
 my $open_comment  = "\n<!--\n";
 my $close_comment = "\n-->\n";
 
-########## end copy from HTML::Entities
-
+################################################################################
+# char tables below are from pre 0.14. keeping here for reference, just in case.
+#
+#
 # a subset of chars per SWISH
 #$ISO_ext
 #    = 'ªµºÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ';
@@ -118,6 +118,7 @@ my %Defaults = (
     class        => undef,
     print_stream => 1,
     buffer_limit => 2**16,
+    fh           => *STDOUT,
 );
 
 sub init {
@@ -194,6 +195,7 @@ sub _setup {
         stemmer    => $self->{stemmer},
     );
 
+    $self->{_terms_regex} = $self->{query}->terms_as_regex;
 }
 
 sub _handle_tag {
@@ -207,18 +209,18 @@ sub _handle_tag {
     # $tagname is just bare tagname
 
     if ( $self->{debug} >= 3 ) {
-        print $open_comment;
-        print "\n" . '=' x 20 . "\n";
-        print "Tag          :$tag:\n";
-        print "TagName      :$tagname:\n";
-        print "Offset       :$offset\n";
-        print "Length       :$length\n";
-        print "Offset_end   :$offset_end\n";
-        print "Text         :$text\n";
-        print "Attr         :" . dump($attr) . "\n";
-        print "skipping_tag :$self->{_skipping_tag}:\n";
-        print "is_end_tag   :$is_end_tag\n";
-        print $close_comment;
+        print { $self->{fh} } $open_comment;
+        print { $self->{fh} } "\n" . '=' x 20 . "\n";
+        print { $self->{fh} } "Tag          :$tag:\n";
+        print { $self->{fh} } "TagName      :$tagname:\n";
+        print { $self->{fh} } "Offset       :$offset\n";
+        print { $self->{fh} } "Length       :$length\n";
+        print { $self->{fh} } "Offset_end   :$offset_end\n";
+        print { $self->{fh} } "Text         :$text\n";
+        print { $self->{fh} } "Attr         :" . dump($attr) . "\n";
+        print { $self->{fh} } "skipping_tag :$self->{_skipping_tag}:\n";
+        print { $self->{fh} } "is_end_tag   :$is_end_tag\n";
+        print { $self->{fh} } $close_comment;
     }
 
     # turn HiLiting ON if we are not inside the <head> tagset.
@@ -234,7 +236,7 @@ sub _handle_tag {
 
             # still in <head> section. handle and continue.
             if ( $self->{print_stream} ) {
-                print $text;
+                print { $self->{fh} } $text;
             }
             else {
                 $self->{output_buffer} .= $text;
@@ -294,6 +296,12 @@ sub _handle_end_tag {
 
 }
 
+sub _matches_any_term {
+    my $self = shift;
+    my $buf  = shift;
+    return $buf =~ m/$self->{_terms_regex}/;
+}
+
 sub _flush_buffer {
     my ($self) = @_;
 
@@ -311,7 +319,7 @@ sub _flush_buffer {
         )
     {
         if ( $self->{print_stream} ) {
-            print $self->{_buffer};
+            print { $self->{fh} } $self->{_buffer};
         }
         else {
             $self->{output_buffer} .= $self->{_buffer};
@@ -324,13 +332,20 @@ sub _flush_buffer {
 
         $self->{debug} and carp "flushing buffer";
 
-        my $hilited = $self->apply_hiliting( $self->{_buffer} );
+        my $hilited;
+
+        if ( $self->_matches_any_term( $self->{_decoded_buffer} ) ) {
+            $hilited = $self->apply_hiliting( $self->{_buffer} );
+        }
+        else {
+            $hilited = $self->{_buffer};
+        }
 
         # remove any NULL markers we inserted to skip hiliting
         $hilited =~ s/\002|\003//g;
 
         if ( $self->{print_stream} ) {
-            print $hilited;
+            print { $self->{fh} } $hilited;
         }
         else {
             $self->{output_buffer} .= $hilited;
@@ -403,7 +418,7 @@ sub _handle_start_tag {
         : $text;
 
     if ( $self->{print_stream} ) {
-        print $reassemble;
+        print { $self->{fh} } $reassemble;
     }
     else {
         $self->{_buffer} .= $reassemble;
@@ -416,7 +431,7 @@ sub _handle_start_tag {
 
     if ( lc($tag) eq 'head' ) {
         if ( $self->{print_stream} ) {
-            print $self->{style_header}
+            print { $self->{fh} } $self->{style_header}
                 if $self->{style_header};
         }
         else {
@@ -429,7 +444,6 @@ sub _handle_start_tag {
 
 sub _handle_text {
     my ( $self, $parser, $decoded_text, $text, $offset, $length ) = @_;
-    $text = to_utf8($text);
     my $text_filter = $self->{text_filter};
     my $filtered
         = defined $text_filter
@@ -440,7 +454,7 @@ sub _handle_text {
 
         # still in <head> section. handle and continue.
         if ( $self->{print_stream} ) {
-            print $filtered;
+            print { $self->{fh} } $filtered;
         }
         else {
             $self->{output_buffer} .= $filtered;
@@ -466,12 +480,12 @@ sub _handle_text {
     }
 
     if ( $self->{debug} >= 3 ) {
-        print $open_comment
+        print { $self->{fh} } $open_comment
             . "text         :$text:\n"
             . "filtered     :$filtered:\n";
-        print "Added text to buffer\n"
+        print { $self->{fh} } "Added text to buffer\n"
             if $self->{_is_hiliting};
-        print "decoded      :$decoded_text:\n"
+        print { $self->{fh} } "decoded      :$decoded_text:\n"
             . "Offset       :$offset\n"
             . "Length       :$length\n"
             . $close_comment;
@@ -487,7 +501,7 @@ sub _check_count {
     for ( sort keys %{ $_[0] } ) {
         $done += $_[0]->{$_};
         if ( $self->{debug} >= 1 and $_[0]->{$_} > 0 ) {
-            print
+            print { $self->{fh} }
                 "$open_comment $_[0]->{$_} remaining to hilite for: $_ $close_comment";
         }
     }
@@ -515,7 +529,7 @@ sub _reset_output_buffer {
 sub _handle_default {
     my ( $self, $parser, $text ) = @_;
     if ( $self->{print_stream} ) {
-        print $text;
+        print { $self->{fh} } $text;
     }
     else {
         $self->{_buffer} .= $text;
@@ -554,13 +568,13 @@ sub run {
 
     my $return;
     if ( !ref($string) && -e $string ) {
-        $return = $parser->parse_file($string);
+        $return = $parser->parse( to_utf8( scalar read_file($string) ) );
     }
     elsif ( $string =~ m/^https?:\/\//i ) {
-        $return = $parser->parse( $self->_get_url($string) );
+        $return = $parser->parse( to_utf8( $self->_get_url($string) ) );
     }
     elsif ( ref $string eq 'SCALAR' ) {
-        $return = $parser->parse($$string);
+        $return = $parser->parse( to_utf8($$string) );
     }
     else {
         croak
@@ -574,7 +588,8 @@ sub run {
         $self->{output_buffer} .= "\n";
     }
     else {
-        print "\n";             # does parser intentionlly chomp last line?
+        print { $self->{fh} }
+            "\n";               # does parser intentionlly chomp last line?
     }
 
     # reset parser -- TODO need this since it goes out of scope here?
@@ -711,8 +726,8 @@ as soon as it is evaluated. You can change that behavior with the
 B<print_stream> parameter in new(), which will instead cache all the HTML
 and return it as a scalar string from run().
 
-Otherwise, you can direct the print() to a filehandle with the standard select() function
-in your calling code.
+Otherwise, you can direct the print() to a filehandle with the
+fh() param/method.
 
 =item *
 
@@ -755,6 +770,11 @@ In addition, the following HTML::HiLiter-specific parameters are supported:
 
 =over
 
+=item fh
+
+The filehandle to send output to. Defaults to STDOUT. If print_stream is false,
+will buffer instead of printing.
+
 =item hiliter
 
 Set a Search::Tools::HiLiter object for HTML::HiLiter to use. If you do not set one,
@@ -779,7 +799,7 @@ n a <p> tagset, for example.
 
 =item print_stream
 
-Default falue true (1). Print highlighted HTML as the HTML::Parser encounters it.
+Default value true (1). Print highlighted HTML as the HTML::Parser encounters it.
 If true, use a select() in your script to print somewhere besides the
 perl default of STDOUT. 
 
@@ -857,12 +877,6 @@ The problem became most evident when we started using Swish-e. Swish-e does such
 a good job at converting entities and doing phrase matching that we found ourselves
 in a dilemma: Swish-e often gave valid search results that mere mortal highlighters
 could not match in the source HTML -- not even the SWISH::*Highlight modules.
-
-I assume ISO-8859-1 Latin1 encoding. Unicode is beyond me at this point,
-though I suspect you could make it work fairly easily with 
-newer Perl versions (>= 5.8) and the 'use locale' and 'use encoding' pragmas.
-Thus regex matching would work with things like \w and [^\w] since perl
-interprets the \w for you.
 
 With the exception of the 'nohiliter' attribute,
 I think I follow the W3C HTML 4.01 specification. Please prove me wrong.
