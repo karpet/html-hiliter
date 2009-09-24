@@ -1,3 +1,0 @@
-* rewrite to use Search::Tools
-
-* textPhraseBound is getting double escaped
