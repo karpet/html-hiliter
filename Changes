@@ -98,4 +98,7 @@ Revision history for Perl extension HiLiter.
       you'll need to convert back to your desired encoding, using something 
       like the Encode module.
 
+0.15  19 Nov 2009
+    * fixed init() to only pass on args that are methods (was causing tests to fail with
+      latest version of Rose::ObjectX::CAF).
 
