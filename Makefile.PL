@@ -51,7 +51,7 @@ WriteMakefile(
     PL_FILES      => {},
     PREREQ_PM     => {
         'Moose'         => 0,
-        'Search::Tools' => '0.86',
+        'Search::Tools' => '1.000',
         'HTML::Parser'  => 0,
         'Test::More'    => 0,        # Search::Tools req too
         'File::Slurp'   => 0,        # Search::Tools req too

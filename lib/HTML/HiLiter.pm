@@ -45,7 +45,7 @@ for my $attr (qw( class style colors text_color tty )) {
     has $attr => ( is => 'rw' );
 }
 
-our $VERSION = '0.18';
+our $VERSION = '0.200';
 
 # some global debugging vars
 my $open_comment  = "\n<!--\n";
