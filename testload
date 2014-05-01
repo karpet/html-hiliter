@@ -1,9 +1,0 @@
-#!/usr/bin/perl 
-
-use Pubs::Times;
-
-tick('start');
-
-require HTML::HiLiter;
-
-tick('end');
