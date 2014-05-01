@@ -67,10 +67,10 @@ WriteMakefile(
         : ( META_MERGE => {
                 resources => {
                     license  => 'http://dev.perl.org/licenses/',
-                    homepage => 'http://perl.peknet.com/wiki/HTMLHiLiter',
+                    homepage => 'https://github.com/karpet/html-hiliter',
                     bugtracker =>
                         'http://rt.cpan.org/NoAuth/Bugs.html?Dist=HTML-HiLiter',
-                    repository => 'http://svn.peknet.com/perl/HTML-HiLiter',
+                    repository => 'https://github.com/karpet/html-hiliter',
                 },
             }
         )
