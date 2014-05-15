@@ -54,7 +54,6 @@ WriteMakefile(
         'Search::Tools' => '1.000',
         'HTML::Parser'  => 0,
         'Test::More'    => 0,        # Search::Tools req too
-        'File::Slurp'   => 0,        # Search::Tools req too
         'Data::Dump'    => 0,        # Search::Tools req too
 
     },
